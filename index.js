@@ -239,6 +239,38 @@ async function run() {
       res.send(result);
     });
 
+    //Selected Product related apis
+    app.get("/selectedProduct", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res
+          .status(403)
+          .send({ error: true, message: "Forbidden access" });
+      }
+
+      const query = { email: email };
+      const result = await SelectProductCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/selectedProduct", async (req, res) => {
+      const item = req.body;
+      const result = await SelectProductCollection.insertOne(item);
+      res.send(result);
+    });
+
+    app.delete("/selectedProduct/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await SelectProductCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // route
     app.get("/", (req, res) => {
       const serverStatus = {
