@@ -117,6 +117,43 @@ async function run() {
       res.send({ token });
     });
 
+    // Product related apis
+    app.get("/product", async (req, res) => {
+      const result = await ProductCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const product = await ProductCollection.findOne(query);
+      res.send(product);
+    });
+
+    app.post("/product", async (req, res) => {
+      const newProduct = req.body;
+      const result = await ProductCollection.insertOne(newProduct);
+      res.send(result);
+    });
+
+    app.patch("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedProduct = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: updatedProduct,
+      };
+      const result = await ProductCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await ProductCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // route
     app.get("/", (req, res) => {
       const serverStatus = {
