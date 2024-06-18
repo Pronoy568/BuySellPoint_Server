@@ -108,6 +108,15 @@ async function run() {
       res.send({ result: insertResult, deleteResult, updateSeat });
     });
 
+    // jwt related apis
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
+
     // route
     app.get("/", (req, res) => {
       const serverStatus = {
