@@ -154,6 +154,91 @@ async function run() {
       res.send(result);
     });
 
+    // user related apis
+    app.get("/users", async (req, res) => {
+      const result = await UserCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await UserCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "User already exists" });
+      }
+      const result = await UserCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await UserCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await UserCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.send({ admin: false });
+      }
+      const query = { email: email };
+      const user = await UserCollection.findOne(query);
+      const result = { admin: user?.role === "admin" };
+      res.send(result);
+    });
+
+    app.patch("/users/seller/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: "seller",
+        },
+      };
+      const result = await UserCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.get("/users/seller/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.send({ admin: false });
+      }
+      const query = { email: email };
+      const user = await UserCollection.findOne(query);
+      const result = { admin: user?.role === "seller" };
+      res.send(result);
+    });
+
+    app.get("/users/user/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.send({ user: false });
+      }
+      const query = { email: email };
+      const user = await UserCollection.findOne(query);
+      const result = { user: user?.role === "user" };
+      res.send(result);
+    });
+
     // route
     app.get("/", (req, res) => {
       const serverStatus = {
