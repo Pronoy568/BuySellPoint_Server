@@ -55,6 +55,58 @@ async function run() {
         return;
       }
     });
+    // Collect Database Collection
+    const db = client.db("BuySellPointDB");
+    const UserCollection = db.collection("users");
+    const ProductCollection = db.collection("product");
+    const SelectProductCollection = db.collection("selectProduct");
+    const PaymentCollection = db.collection("payment");
+
+    // create payment intent
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      if (price) {
+        const amount = parseInt(price * 100);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      }
+    });
+
+    // payment related api
+    app.get("/payments", async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const query = { email: email };
+      const result = await PaymentCollection.find(query)
+        .sort({ _id: -1 })
+        .toArray();
+      res.send(result);
+    });
+
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const query = {
+        _id: new ObjectId(payment.selectedPayment._id.toString()),
+      };
+      const updateQuery = {
+        _id: new ObjectId(payment.selectedPayment.ProductItemId.toString()),
+      };
+      const updateSeat = await ProductCollection.updateOne(updateQuery, {
+        $inc: { available: -1 },
+      });
+
+      const insertResult = await PaymentCollection.insertOne(payment);
+      const deleteResult = await SelectProductCollection.deleteOne(query);
+      res.send({ result: insertResult, deleteResult, updateSeat });
+    });
 
     // route
     app.get("/", (req, res) => {
