@@ -93,19 +93,19 @@ async function run() {
 
     app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
+      if (!payment.email || !payment.transactionId || !payment.price) {
+        return res.status(400).send({ error: "Required fields missing" });
+      }
+
       const query = {
-        _id: new ObjectId(payment.selectedPayment._id.toString()),
+        _id: {
+          $in: payment.cartItems.map((id) => new ObjectId(id)),
+        },
       };
-      const updateQuery = {
-        _id: new ObjectId(payment.selectedPayment.ProductItemId.toString()),
-      };
-      const updateSeat = await ProductCollection.updateOne(updateQuery, {
-        $inc: { available: -1 },
-      });
 
       const insertResult = await PaymentCollection.insertOne(payment);
-      const deleteResult = await SelectProductCollection.deleteOne(query);
-      res.send({ result: insertResult, deleteResult, updateSeat });
+      const deleteResult = await SelectProductCollection.deleteMany(query);
+      res.send({ result: insertResult, deleteResult });
     });
 
     // jwt related apis
@@ -222,7 +222,7 @@ async function run() {
       }
       const query = { email: email };
       const user = await UserCollection.findOne(query);
-      const result = { admin: user?.role === "seller" };
+      const result = { seller: user?.role === "seller" };
       res.send(result);
     });
 
